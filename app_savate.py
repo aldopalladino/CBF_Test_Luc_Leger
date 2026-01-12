@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # app_savate.py
 # Dashboard Luc Leger (club) - Streamlit
-# Saisie: prenom, age, sexe, palier | Sortie: niveau, interpretation assaut, specificite age, applications
+# Saisie: prenom, age, sexe, palier | Sortie: niveau (5), interpretation assaut, specificite age, applications
 # Lancer: streamlit run app_savate.py
 
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass, asdict
 from datetime import date
@@ -16,8 +17,10 @@ import streamlit as st
 
 
 # -----------------------------
-# Bareme club (outil pedagogique)
+# BAREME CLUB (pedagogique)
 # Paliers 7 a 15, tranches 5 ans, ages 15 a 60
+# Niveaux source (9): Faible, Moyen-, Moyen, Moyen+, Bon, Tres bon, Excellent, Elite, Elite+
+# Puis mapping vers 5 niveaux: Insuffisant, Moyen, Bon, Tres Bon, Excellent
 # -----------------------------
 BAREME: Dict[str, Dict[str, Dict[int, str]]] = {
     "M": {
@@ -44,16 +47,14 @@ BAREME: Dict[str, Dict[str, Dict[int, str]]] = {
     },
 }
 
-LEVEL_COLORS = {
-    "Faible": "#fecaca",
-    "Moyen-": "#fed7aa",
-    "Moyen": "#fde68a",
-    "Moyen+": "#fef08a",
-    "Bon": "#bbf7d0",
-    "Tres bon": "#86efac",
-    "Excellent": "#99f6e4",
-    "Elite": "#bae6fd",
-    "Elite+": "#c7d2fe",
+
+# 5 niveaux (affiches)
+LEVEL5_COLORS = {
+    "Insuffisant": "#fee2e2",  # rouge clair
+    "Moyen": "#ffedd5",        # orange clair
+    "Bon": "#dcfce7",          # vert clair
+    "Tres Bon": "#bbf7d0",     # vert plus marque
+    "Excellent": "#cffafe",    # cyan clair
 }
 
 
@@ -68,49 +69,67 @@ def age_band(age: int) -> str:
     return f"{start}-{end}"
 
 
-def level_for(sex: str, age: int, palier: int) -> str:
+def level_raw(sex: str, age: int, palier: int) -> str:
     sex = "M" if sex == "M" else "F"
     band = age_band(age)
     p = clamp(palier, 7, 15)
     return BAREME.get(sex, {}).get(band, {}).get(p, "-")
 
 
-def interpret_for_assaut(level: str) -> Dict[str, str]:
-    if level == "Faible":
+def to_level5(raw: str) -> str:
+    # Mapping valide par toi:
+    # Insuffisant = Faible
+    # Moyen = Moyen-, Moyen, Moyen+
+    # Bon = Bon
+    # Tres Bon = Tres bon
+    # Excellent = Excellent, Elite, Elite+
+    if raw == "Faible":
+        return "Insuffisant"
+    if raw in ("Moyen-", "Moyen", "Moyen+"):
+        return "Moyen"
+    if raw == "Bon":
+        return "Bon"
+    if raw == "Tres bon":
+        return "Tres Bon"
+    if raw in ("Excellent", "Elite", "Elite+"):
+        return "Excellent"
+    return "-"
+
+
+def level_for(sex: str, age: int, palier: int) -> str:
+    return to_level5(level_raw(sex, age, palier))
+
+
+def interpret_for_assaut(level5: str) -> Dict[str, str]:
+    if level5 == "Insuffisant":
         return {
             "Synthese": "Endurance insuffisante pour soutenir plusieurs reprises a intensite assaut.",
-            "Point de vigilance": "Risque de chute de lucidite (distance/garde) des la 1re-2e reprise.",
-            "Priorite de travail": "Construire une base aerobie + maitrise technique a faible intensite.",
+            "Point de vigilance": "Baisse rapide de lucidite (distance, garde) des la 1re-2e reprise.",
+            "Priorite de travail": "Construire une base aerobie et stabiliser la technique a faible intensite.",
         }
-    if level in ("Moyen-", "Moyen"):
+    if level5 == "Moyen":
         return {
-            "Synthese": "Base cardio correcte pour entrainement, limite pour assauts enchaines.",
-            "Point de vigilance": "Degradation en fin de reprise, baisse de frequence de deplacements.",
-            "Priorite de travail": "Developper VMA/intermittent et tolerance a l'effort.",
+            "Synthese": "Base cardio correcte pour l entrainement, limite sur des assauts enchaines.",
+            "Point de vigilance": "Degradation en fin de reprise: deplacements moins frequents, relances plus rares.",
+            "Priorite de travail": "Developper l intermittent et la tolerance aux changements de rythme.",
         }
-    if level == "Moyen+":
+    if level5 == "Bon":
         return {
-            "Synthese": "Profil exploitable en assaut club, a condition d'une gestion du rythme.",
-            "Point de vigilance": "Peut subir les accelerations adverses (changements de rythme).",
-            "Priorite de travail": "Intermittent court + travail de relance + strategie d'economie.",
+            "Synthese": "Bon niveau pour l assaut: volume de travail stable et capacite a relancer.",
+            "Point de vigilance": "Risque principal: surcharge si recuperation et progressivite sont negligees.",
+            "Priorite de travail": "Intermittent specifique savate + deplacements + relances structurees.",
         }
-    if level == "Bon":
+    if level5 == "Tres Bon":
         return {
-            "Synthese": "Bon niveau pour assaut: capacite a tenir le volume et relancer.",
-            "Point de vigilance": "Principal risque: surcharge si la recup est negligee.",
-            "Priorite de travail": "Specifique savate (intermittent + deplacements + enchainements).",
+            "Synthese": "Tres bon moteur: enchainement de reprises et relances frequentes possibles.",
+            "Point de vigilance": "Risque: partir trop vite (sur-regime) plutot qu une limite cardio.",
+            "Priorite de travail": "Affutage, qualite des relances, lactique court en controle, tactique.",
         }
-    if level in ("Tres bon", "Excellent"):
+    if level5 == "Excellent":
         return {
-            "Synthese": "Tres bon moteur: enchainement de reprises, relances frequentes possibles.",
-            "Point de vigilance": "Risque: partir trop vite (sur-regime) plutot que limite cardio.",
-            "Priorite de travail": "Affutage, qualite des relances, lactique court, gestion tactique.",
-        }
-    if level in ("Elite", "Elite+"):
-        return {
-            "Synthese": "Tres haut niveau cardio: gros potentiel de pression et repetition d'efforts.",
-            "Point de vigilance": "Risque: blessure/surcharge si volumes mal pilotes.",
-            "Priorite de travail": "Specificite assaut (vitesse, lucidite, relances), recuperation premium.",
+            "Synthese": "Excellent moteur cardio: pression et repetition d efforts a haute frequence possibles.",
+            "Point de vigilance": "Risque: surcharge (tendons, mollets) si volumes et intensites mal pilotes.",
+            "Priorite de travail": "Qualite > volume, specificite assaut, recuperation premium.",
         }
     return {"Synthese": "Niveau non determine.", "Point de vigilance": "-", "Priorite de travail": "-"}
 
@@ -119,52 +138,50 @@ def age_specific_notes(age: int) -> Dict[str, str]:
     if age <= 19:
         return {
             "Titre": "Specificite 15-19 ans",
-            "Note": "Priorite a la progressivite: technique propre, deplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats ludiques et courts.",
+            "Note": "Priorite a la progressivite: technique propre, deplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats courts et ludiques.",
         }
     if age <= 34:
         return {
             "Titre": "Specificite 20-34 ans",
-            "Note": "Fenetre ideale pour developper la VMA et la tolerance a l'intensite. Monter progressivement la densite (intermittent, circuits specifiques assaut).",
+            "Note": "Fenetre ideale pour developper la VMA et la tolerance a l intensite. Monter progressivement la densite (intermittent, circuits specifiques assaut).",
         }
     if age <= 44:
         return {
             "Titre": "Specificite 35-44 ans",
-            "Note": "Accent sur la recuperation et la regularite. Maintenir la VMA via intermittents courts, renforcer l'economie de course/deplacements.",
+            "Note": "Accent sur la recuperation et la regularite. Maintenir la VMA via intermittents courts et renforcer l economie des deplacements.",
         }
     return {
         "Titre": "Specificite 45-60 ans",
-        "Note": "Priorite: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise, endurance fondamentale reguliere.",
+        "Note": "Priorite: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise et endurance fondamentale reguliere.",
     }
 
 
-def suggested_work(level: str) -> List[Dict[str, str]]:
+def suggested_work(level5: str) -> List[Dict[str, str]]:
     base = [
-        {"Code": "EF", "Application": "Endurance fondamentale", "Detail": "20-45 min en aisance respiratoire, 1-2x/sem."},
+        {"Code": "EF", "Application": "Endurance fondamentale", "Detail": "20 a 45 min en aisance respiratoire, 1 a 2 fois par semaine."},
         {"Code": "TECH", "Application": "Technique basse intensite", "Detail": "Rounds techniques (shadow, cibles) sans fatigue excessive."},
     ]
-    vma_short = [
-        {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2x(6-10 repetitions) a intensite elevee, recup 3-4 min entre blocs."},
-        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2x(10-20 repetitions), focalise relance/deplacements."},
+    intermittent = [
+        {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2 x (6 a 10 repetitions) a intensite elevee, recuperation 3 a 4 min entre blocs."},
+        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 repetitions), axe relance et deplacements."},
     ]
     specific = [
-        {"Code": "ASSAUT", "Application": "Intermittent specifique assaut", "Detail": "Ex: 6x(1 min assaut actif / 1 min leger) + consignes tactiques."},
-        {"Code": "DEPL", "Application": "Deplacements", "Detail": "Ateliers d'appuis: avant/arriere, lateral, pivots, 2-3 blocs de 4 min."},
-        {"Code": "REL", "Application": "Relances", "Detail": "Series courtes: 10-15 s explosif / 45-50 s recup, 8-12 reps."},
+        {"Code": "ASSAUT", "Application": "Intermittent specifique assaut", "Detail": "6 x (1 min assaut actif / 1 min leger) avec consignes tactiques."},
+        {"Code": "DEPL", "Application": "Deplacements", "Detail": "Ateliers d appuis (avant/arriere, lateral, pivots), 2 a 3 blocs de 4 min."},
+        {"Code": "REL", "Application": "Relances", "Detail": "10 a 15 s explosif / 45 a 50 s recup, 8 a 12 repetitions."},
     ]
-    recovery = [{"Code": "REC", "Application": "Recuperation", "Detail": "Marche, mobilite, sommeil, hydratation, 1-2 jours faciles/sem."}]
+    recovery = [{"Code": "REC", "Application": "Recuperation", "Detail": "Marche, mobilite, sommeil, hydratation, 1 a 2 jours faciles par semaine."}]
 
-    if level == "Faible":
-        return base + [vma_short[0]] + recovery
-    if level in ("Moyen-", "Moyen"):
-        return base + vma_short + [specific[1]] + recovery
-    if level == "Moyen+":
-        return base + vma_short + specific + recovery
-    if level == "Bon":
-        return base + vma_short + specific + recovery
-    if level in ("Tres bon", "Excellent"):
-        return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4-6x(30-45 s dur / 2-3 min recup) en controle."}] + recovery
-    if level in ("Elite", "Elite+"):
-        return specific + [{"Code": "QUAL", "Application": "Qualite > volume", "Detail": "Seances courtes, intensite ciblee, forte exigence de recuperation."}] + recovery
+    if level5 == "Insuffisant":
+        return base + [intermittent[0]] + recovery
+    if level5 == "Moyen":
+        return base + intermittent + [specific[1]] + recovery
+    if level5 == "Bon":
+        return base + intermittent + specific + recovery
+    if level5 == "Tres Bon":
+        return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min recup) en controle."}] + recovery
+    if level5 == "Excellent":
+        return specific + [{"Code": "QUAL", "Application": "Qualite > volume", "Detail": "Seances plus courtes, intensite ciblee, exigence forte sur la recuperation."}] + recovery
     return []
 
 
@@ -178,36 +195,75 @@ class Athlete:
 
 
 # -----------------------------
-# UI Streamlit
+# UI Streamlit (approche safe)
 # -----------------------------
 st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 
 st.markdown(
     """
 <style>
-.kpi { padding: 14px; border-radius: 14px; border: 1px solid #e5e7eb; background: white; }
-.level-pill { display:inline-block; padding: 4px 10px; border-radius:999px; border:1px solid #e5e7eb; font-size: 12px; font-weight:600; }
-.header { padding: 16px; border-radius: 18px; color: white;
-  background: linear-gradient(90deg, #dc2626 0%, #2563eb 50%, #0f172a 100%); }
-.small { color: rgba(255,255,255,0.9); }
+/* Layout */
+.section {
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+.section-title {
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.kpi {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+.header {
+  padding: 16px;
+  border-radius: 18px;
+  color: white;
+  background: linear-gradient(90deg, #b91c1c 0%, #1d4ed8 55%, #0f172a 100%);
+}
+.small {
+  color: rgba(255,255,255,0.92);
+}
+.pill {
+  display:inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border:1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
+# Header with logo (safe)
+col_logo, col_title = st.columns([1, 7], vertical_alignment="center")
+with col_logo:
+    if os.path.exists("Logo Rond.png"):
+        st.image("Logo Rond.png", width=84)
+    else:
+        # Safe fallback (no crash)
+        st.markdown("<div class='pill'>Logo manquant: Logo Rond.png</div>", unsafe_allow_html=True)
+
+with col_title:
+    st.markdown(
+        """
 <div class="header">
-  <div style="display:flex; align-items:center; gap:14px;">
-    <div>
-      <div style="font-size:26px; font-weight:700;">Tableau de bord - Test Luc Leger</div>
-      <div class="small" style="margin-top:4px;">Saisie des resultats, niveau automatique, interpretation assaut, specificite age et applications pour les tireurs.</div>
-    </div>
+  <div style="font-size:26px; font-weight:900;">Tableau de bord - Test Luc Leger</div>
+  <div class="small" style="margin-top:6px;">
+    Saisie des resultats, niveau automatique (5 niveaux), interpretation assaut, specificite age et applications pour les tireurs.
   </div>
 </div>
 """,
-    unsafe_allow_html=True,
-)
+        unsafe_allow_html=True,
+    )
 
 if "athletes" not in st.session_state:
     st.session_state.athletes: List[Athlete] = []
@@ -219,25 +275,24 @@ df = (
 )
 
 total = len(df)
-m = int((df["sexe"] == "M").sum()) if total else 0
-f = int((df["sexe"] == "F").sum()) if total else 0
+nb_m = int((df["sexe"] == "M").sum()) if total else 0
+nb_f = int((df["sexe"] == "F").sum()) if total else 0
 avg_palier = float(df["palier"].mean()) if total else None
-
-# FIX IMPORTANT: on calcule la valeur affichee avant de l'injecter dans le HTML
 avg_palier_str = f"{avg_palier:.1f}" if avg_palier is not None else "-"
 
 k1, k2, k3, k4 = st.columns(4)
-k1.markdown(f"<div class='kpi'><div style='color:#64748b;'>Participants</div><div style='font-size:26px;font-weight:700;'>{total}</div></div>", unsafe_allow_html=True)
-k2.markdown(f"<div class='kpi'><div style='color:#64748b;'>Masculin</div><div style='font-size:26px;font-weight:700;'>{m}</div></div>", unsafe_allow_html=True)
-k3.markdown(f"<div class='kpi'><div style='color:#64748b;'>Feminin</div><div style='font-size:26px;font-weight:700;'>{f}</div></div>", unsafe_allow_html=True)
-k4.markdown(f"<div class='kpi'><div style='color:#64748b;'>Palier moyen</div><div style='font-size:26px;font-weight:700;'>{avg_palier_str}</div></div>", unsafe_allow_html=True)
+k1.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:800;'>Participants</div><div style='font-size:26px;font-weight:900;'>{total}</div></div>", unsafe_allow_html=True)
+k2.markdown(f"<div class='kpi'><div style='color:#b91c1c;font-weight:800;'>Masculin</div><div style='font-size:26px;font-weight:900;'>{nb_m}</div></div>", unsafe_allow_html=True)
+k3.markdown(f"<div class='kpi'><div style='color:#1d4ed8;font-weight:800;'>Feminin</div><div style='font-size:26px;font-weight:900;'>{nb_f}</div></div>", unsafe_allow_html=True)
+k4.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:800;'>Palier moyen</div><div style='font-size:26px;font-weight:900;'>{avg_palier_str}</div></div>", unsafe_allow_html=True)
 
 st.write("")
 
 left, right = st.columns([1, 2], gap="large")
 
 with left:
-    st.subheader("Saisie d'un resultat")
+    st.markdown("<div class='section' style='border-left:10px solid #b91c1c;'>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Saisie d'un resultat</div>", unsafe_allow_html=True)
 
     prenom = st.text_input("Prenom", placeholder="Ex: Lina")
     age = st.number_input("Age", min_value=15, max_value=60, value=15, step=1)
@@ -256,17 +311,18 @@ with left:
                     palier=int(palier),
                 ),
             )
-            st.success("Ajoute.")
+            st.success("Resultat ajoute.")
         else:
             st.error("Le prenom est requis.")
 
-    st.divider()
-    st.caption("Le niveau est calcule via un bareme club (pedagogique). Outil d'aide a la decision pour l'entrainement en Savate.")
+    st.caption("Note: eviter les caracteres typographiques (tiret long, apostrophe courbe) lors du copier-coller dans le code.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-    st.subheader("Liste des tireurs")
-    query = st.text_input("Recherche", placeholder="Filtrer: prenom, age, sexe, palier...")
+    st.markdown("<div class='section' style='border-left:10px solid #1d4ed8;'>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Liste des tireurs</div>", unsafe_allow_html=True)
 
+    query = st.text_input("Recherche", placeholder="Filtrer: prenom, age, sexe, palier...")
     if total:
         view = df.copy()
         if query.strip():
@@ -279,7 +335,9 @@ with right:
             )
             view = view[mask]
 
+        # Niveau 5
         view["niveau"] = view.apply(lambda r: level_for(str(r["sexe"]), int(r["age"]), int(r["palier"])), axis=1)
+
         view_display = view[["prenom", "age", "sexe", "palier", "niveau"]].rename(
             columns={"prenom": "Prenom", "age": "Age", "sexe": "Sexe", "palier": "Palier", "niveau": "Niveau"}
         )
@@ -295,9 +353,13 @@ with right:
             use_container_width=True,
         )
 
-        st.divider()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        # Selection simple: premiere ligne filtre (ameliore possible)
+        st.write("")
+        st.markdown("<div class='section' style='border-left:10px solid #0f172a;'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Analyse (tireur selectionne)</div>", unsafe_allow_html=True)
+
+        # Selection simple: premiere ligne filtre
         if len(view) > 0:
             selected_row = view.iloc[0]
             sel_prenom = str(selected_row["prenom"])
@@ -305,19 +367,19 @@ with right:
             sel_sexe = str(selected_row["sexe"])
             sel_palier = int(selected_row["palier"])
 
-            lvl = level_for(sel_sexe, sel_age, sel_palier)
+            lvl5 = level_for(sel_sexe, sel_age, sel_palier)
             band = age_band(sel_age)
 
-            color = LEVEL_COLORS.get(lvl, "#e5e7eb")
+            pill_bg = LEVEL5_COLORS.get(lvl5, "#e5e7eb")
             st.markdown(
                 f"""
 <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-  <span class="level-pill" style="background:#f1f5f9;">{sel_prenom}</span>
-  <span class="level-pill" style="background:#f1f5f9;">{sel_age} ans</span>
-  <span class="level-pill" style="background:#f1f5f9;">Tranche {band}</span>
-  <span class="level-pill" style="background:#f1f5f9;">Sexe {'Masculin' if sel_sexe=='M' else 'Feminin'}</span>
-  <span class="level-pill" style="background:#f1f5f9;">Palier {sel_palier}</span>
-  <span class="level-pill" style="background:{color}; margin-left:auto;">Niveau: {lvl}</span>
+  <span class="pill">{sel_prenom}</span>
+  <span class="pill">{sel_age} ans</span>
+  <span class="pill">Tranche {band}</span>
+  <span class="pill">Sexe {'Masculin' if sel_sexe=='M' else 'Feminin'}</span>
+  <span class="pill">Palier {sel_palier}</span>
+  <span class="pill" style="background:{pill_bg}; margin-left:auto;">Niveau: {lvl5}</span>
 </div>
 """,
                 unsafe_allow_html=True,
@@ -326,13 +388,13 @@ with right:
             tab1, tab2, tab3 = st.tabs(["Interpretation assaut", "Specificite age", "Applications (tireur)"])
 
             with tab1:
-                info = interpret_for_assaut(lvl)
+                info = interpret_for_assaut(lvl5)
                 c1, c2, c3 = st.columns(3)
-                c1.metric("Synthese", "")
+                c1.markdown("<div class='section' style='border-left:10px solid #b91c1c;'><div class='section-title'>Synthese</div></div>", unsafe_allow_html=True)
                 c1.write(info["Synthese"])
-                c2.metric("Point de vigilance", "")
+                c2.markdown("<div class='section' style='border-left:10px solid #f59e0b;'><div class='section-title'>Point de vigilance</div></div>", unsafe_allow_html=True)
                 c2.write(info["Point de vigilance"])
-                c3.metric("Priorite de travail", "")
+                c3.markdown("<div class='section' style='border-left:10px solid #1d4ed8;'><div class='section-title'>Priorite de travail</div></div>", unsafe_allow_html=True)
                 c3.write(info["Priorite de travail"])
 
             with tab2:
@@ -341,14 +403,21 @@ with right:
                 st.write(note["Note"])
 
             with tab3:
-                work = suggested_work(lvl)
+                work = suggested_work(lvl5)
                 if not work:
                     st.info("Aucune recommandation disponible.")
                 else:
                     wdf = pd.DataFrame(work)
                     st.dataframe(wdf, use_container_width=True, hide_index=True)
 
-            st.divider()
-            st.caption("Astuce: pour selectionner un tireur precisement, remplace la selection automatique par une liste deroulante sur l'ID ou le prenom.")
+        else:
+            st.info("Aucun tireur a analyser (filtre trop restrictif).")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
     else:
         st.info("Ajoute au moins un tireur pour afficher la liste et l'analyse.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+st.write("")
+st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l entrainement en Savate.")

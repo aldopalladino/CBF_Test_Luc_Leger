@@ -72,14 +72,14 @@ def level_for(sex: str, age: int, palier: int) -> str:
     sex = "M" if sex == "M" else "F"
     band = age_band(age)
     p = clamp(palier, 7, 15)
-    return BAREME.get(sex, {}).get(band, {}).get(p, "—")
+    return BAREME.get(sex, {}).get(band, {}).get(p, "-")
 
 
 def interpret_for_assaut(level: str) -> Dict[str, str]:
     if level == "Faible":
         return {
             "Synthese": "Endurance insuffisante pour soutenir plusieurs reprises a intensite assaut.",
-            "Point de vigilance": "Risque de chute de lucidite (distance / garde) des la 1re-2e reprise.",
+            "Point de vigilance": "Risque de chute de lucidite (distance/garde) des la 1re-2e reprise.",
             "Priorite de travail": "Construire une base aerobie + maitrise technique a faible intensite.",
         }
     if level in ("Moyen-", "Moyen"):
@@ -96,30 +96,30 @@ def interpret_for_assaut(level: str) -> Dict[str, str]:
         }
     if level == "Bon":
         return {
-            "Synthese": "Bon niveau pour assaut : capacite a tenir le volume et relancer.",
-            "Point de vigilance": "Principal risque : surcharge si la recup est negligee.",
+            "Synthese": "Bon niveau pour assaut: capacite a tenir le volume et relancer.",
+            "Point de vigilance": "Principal risque: surcharge si la recup est negligee.",
             "Priorite de travail": "Specifique savate (intermittent + deplacements + enchainements).",
         }
     if level in ("Tres bon", "Excellent"):
         return {
-            "Synthese": "Tres bon moteur : enchainement de reprises, relances frequentes possibles.",
-            "Point de vigilance": "Risque : partir trop vite (sur-regime) plutot que limite cardio.",
+            "Synthese": "Tres bon moteur: enchainement de reprises, relances frequentes possibles.",
+            "Point de vigilance": "Risque: partir trop vite (sur-regime) plutot que limite cardio.",
             "Priorite de travail": "Affutage, qualite des relances, lactique court, gestion tactique.",
         }
     if level in ("Elite", "Elite+"):
         return {
-            "Synthese": "Tres haut niveau cardio : gros potentiel de pression et repetition d'efforts.",
-            "Point de vigilance": "Risque : blessure/surcharge si volumes mal pilotes.",
+            "Synthese": "Tres haut niveau cardio: gros potentiel de pression et repetition d'efforts.",
+            "Point de vigilance": "Risque: blessure/surcharge si volumes mal pilotes.",
             "Priorite de travail": "Specificite assaut (vitesse, lucidite, relances), recuperation premium.",
         }
-    return {"Synthese": "Niveau non determine.", "Point de vigilance": "—", "Priorite de travail": "—"}
+    return {"Synthese": "Niveau non determine.", "Point de vigilance": "-", "Priorite de travail": "-"}
 
 
 def age_specific_notes(age: int) -> Dict[str, str]:
     if age <= 19:
         return {
             "Titre": "Specificite 15-19 ans",
-            "Note": "Priorite a la progressivite : technique propre, deplacements, et developpement aerobie. Eviter la surcharge lactique, privilegier des formats ludiques et courts.",
+            "Note": "Priorite a la progressivite: technique propre, deplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats ludiques et courts.",
         }
     if age <= 34:
         return {
@@ -129,11 +129,11 @@ def age_specific_notes(age: int) -> Dict[str, str]:
     if age <= 44:
         return {
             "Titre": "Specificite 35-44 ans",
-            "Note": "Accent sur la recuperation et la regularite. Maintenir la VMA via intermittents courts, et renforcer l'economie de course/deplacements.",
+            "Note": "Accent sur la recuperation et la regularite. Maintenir la VMA via intermittents courts, renforcer l'economie de course/deplacements.",
         }
     return {
         "Titre": "Specificite 45-60 ans",
-        "Note": "Priorite : prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise, et endurance fondamentale reguliere.",
+        "Note": "Priorite: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise, endurance fondamentale reguliere.",
     }
 
 
@@ -177,6 +177,9 @@ class Athlete:
     palier: int
 
 
+# -----------------------------
+# UI Streamlit
+# -----------------------------
 st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 
 st.markdown(
@@ -209,20 +212,25 @@ st.markdown(
 if "athletes" not in st.session_state:
     st.session_state.athletes: List[Athlete] = []
 
-df = pd.DataFrame([asdict(a) for a in st.session_state.athletes]) if st.session_state.athletes else pd.DataFrame(columns=["id", "prenom", "age", "sexe", "palier"])
+df = (
+    pd.DataFrame([asdict(a) for a in st.session_state.athletes])
+    if st.session_state.athletes
+    else pd.DataFrame(columns=["id", "prenom", "age", "sexe", "palier"])
+)
+
 total = len(df)
 m = int((df["sexe"] == "M").sum()) if total else 0
 f = int((df["sexe"] == "F").sum()) if total else 0
 avg_palier = float(df["palier"].mean()) if total else None
 
+# FIX IMPORTANT: on calcule la valeur affichee avant de l'injecter dans le HTML
+avg_palier_str = f"{avg_palier:.1f}" if avg_palier is not None else "-"
+
 k1, k2, k3, k4 = st.columns(4)
 k1.markdown(f"<div class='kpi'><div style='color:#64748b;'>Participants</div><div style='font-size:26px;font-weight:700;'>{total}</div></div>", unsafe_allow_html=True)
 k2.markdown(f"<div class='kpi'><div style='color:#64748b;'>Masculin</div><div style='font-size:26px;font-weight:700;'>{m}</div></div>", unsafe_allow_html=True)
 k3.markdown(f"<div class='kpi'><div style='color:#64748b;'>Feminin</div><div style='font-size:26px;font-weight:700;'>{f}</div></div>", unsafe_allow_html=True)
-k4.markdown(
-    f"<div class='kpi'><div style='color:#64748b;'>Palier moyen</div><div style='font-size:26px;font-weight:700;'>{avg_palier:.1f if avg_palier is not None else '—'}</div></div>",
-    unsafe_allow_html=True,
-)
+k4.markdown(f"<div class='kpi'><div style='color:#64748b;'>Palier moyen</div><div style='font-size:26px;font-weight:700;'>{avg_palier_str}</div></div>", unsafe_allow_html=True)
 
 st.write("")
 
@@ -264,14 +272,14 @@ with right:
         if query.strip():
             q = query.strip().lower()
             mask = (
-                view["prenom"].str.lower().str.contains(q)
+                view["prenom"].astype(str).str.lower().str.contains(q)
                 | view["age"].astype(str).str.contains(q)
                 | view["sexe"].astype(str).str.lower().str.contains(q)
                 | view["palier"].astype(str).str.contains(q)
             )
             view = view[mask]
 
-        view["niveau"] = view.apply(lambda r: level_for(r["sexe"], int(r["age"]), int(r["palier"])), axis=1)
+        view["niveau"] = view.apply(lambda r: level_for(str(r["sexe"]), int(r["age"]), int(r["palier"])), axis=1)
         view_display = view[["prenom", "age", "sexe", "palier", "niveau"]].rename(
             columns={"prenom": "Prenom", "age": "Age", "sexe": "Sexe", "palier": "Palier", "niveau": "Niveau"}
         )
@@ -289,6 +297,7 @@ with right:
 
         st.divider()
 
+        # Selection simple: premiere ligne filtre (ameliore possible)
         if len(view) > 0:
             selected_row = view.iloc[0]
             sel_prenom = str(selected_row["prenom"])

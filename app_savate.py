@@ -89,6 +89,9 @@ def level_for(sex: str, age: int, palier: int) -> str:
     return to_level5(level_raw(sex, age, palier))
 
 
+# -----------------------------
+# ANALYSE: textes affiches (avec accents)
+# -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
         return {
@@ -118,7 +121,7 @@ def interpret_for_assaut(level5: str) -> Dict[str, str]:
         return {
             "Synthese": "Excellent moteur cardio: pression et repetition d'efforts a haute frequence possibles.",
             "Point de vigilance": "Risque: surcharge (tendons, mollets) si volumes et intensites mal pilotes.",
-            "Priorite de travail": "Qualite > volume, specificite assaut, recuperation premium.",
+            "Priorite de travail": "Qualite > volume, spécificité assaut, récupération premium.",
         }
     return {"Synthese": "Niveau non determine.", "Point de vigilance": "-", "Priorite de travail": "-"}
 
@@ -126,40 +129,42 @@ def interpret_for_assaut(level5: str) -> Dict[str, str]:
 def age_specific_notes(age: int) -> Dict[str, str]:
     if age <= 19:
         return {
-            "Titre": "Specificite 15-19 ans",
-            "Note": "Priorite a la progressivite: technique propre, deplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats courts et ludiques.",
+            "Titre": "Spécificité 15-19 ans",
+            "Note": "Priorité a la progressivite: technique propre, déplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats courts et ludiques.",
         }
     if age <= 34:
         return {
-            "Titre": "Specificite 20-34 ans",
-            "Note": "Fenetre ideale pour developper la VMA et la tolerance a l'intensite. Monter progressivement la densite (intermittent, circuits specifiques assaut).",
+            "Titre": "Spécificité 20-34 ans",
+            "Note": "Fenetre ideale pour developper la VMA et la tolerance a l'intensite. Monter progressivement la densite (intermittent, circuits spécifiques assaut).",
         }
     if age <= 44:
         return {
-            "Titre": "Specificite 35-44 ans",
-            "Note": "Accent sur la recuperation et la regularite. Maintenir la VMA via intermittents courts et renforcer l'economie des deplacements.",
+            "Titre": "Spécificité 35-44 ans",
+            "Note": "Accent sur la récupération et la regularite. Maintenir la VMA via intermittents courts et renforcer l'economie des déplacements.",
         }
     return {
-        "Titre": "Specificite 45-60 ans",
-        "Note": "Priorite: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise et endurance fondamentale reguliere.",
+        "Titre": "Spécificité 45-60 ans",
+        "Note": "Priorité: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise et endurance fondamentale reguliere.",
     }
 
 
 def suggested_work(level5: str) -> List[Dict[str, str]]:
+    # Ici, on garde les textes simples; l'onglet Applications est inclus dans la section Analyse,
+    # donc on applique aussi les accents demandés sur les mots sensibles.
     base = [
         {"Code": "EF", "Application": "Endurance fondamentale", "Detail": "20 a 45 min en aisance respiratoire, 1 a 2 fois par semaine."},
         {"Code": "TECH", "Application": "Technique basse intensite", "Detail": "Rounds techniques (shadow, cibles) sans fatigue excessive."},
     ]
     intermittent = [
         {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2 x (6 a 10 repetitions) a intensite elevee, recuperation 3 a 4 min entre blocs."},
-        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 repetitions), axe relance et deplacements."},
+        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 repetitions), axe relance et déplacements."},
     ]
     specific = [
-        {"Code": "ASSAUT", "Application": "Intermittent specifique assaut", "Detail": "6 x (1 min assaut actif / 1 min leger) avec consignes tactiques."},
-        {"Code": "DEPL", "Application": "Deplacements", "Detail": "Ateliers d'appuis (avant/arriere, lateral, pivots), 2 a 3 blocs de 4 min."},
+        {"Code": "ASSAUT", "Application": "Intermittent spécifique assaut", "Detail": "6 x (1 min assaut actif / 1 min leger) avec consignes tactiques."},
+        {"Code": "DEPL", "Application": "Déplacements", "Detail": "Ateliers d'appuis (avant/arriere, lateral, pivots), 2 a 3 blocs de 4 min."},
         {"Code": "REL", "Application": "Relances", "Detail": "10 a 15 s explosif / 45 a 50 s recup, 8 a 12 repetitions."},
     ]
-    recovery = [{"Code": "REC", "Application": "Recuperation", "Detail": "Marche, mobilite, sommeil, hydratation, 1 a 2 jours faciles par semaine."}]
+    recovery = [{"Code": "REC", "Application": "Récupération", "Detail": "Marche, mobilite, sommeil, hydratation, 1 a 2 jours faciles par semaine."}]
 
     if level5 == "Insuffisant":
         return base + [intermittent[0]] + recovery
@@ -170,7 +175,7 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
     if level5 == "Tres Bon":
         return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min recup) en controle."}] + recovery
     if level5 == "Excellent":
-        return specific + [{"Code": "QUAL", "Application": "Qualite > volume", "Detail": "Seances plus courtes, intensite ciblee, exigence forte sur la recuperation."}] + recovery
+        return specific + [{"Code": "QUAL", "Application": "Qualite > volume", "Detail": "Seances plus courtes, intensite ciblee, exigence forte sur la récupération."}] + recovery
     return []
 
 
@@ -184,7 +189,7 @@ class Athlete:
 
 
 # -----------------------------
-# UI (approche safe + accents demandes)
+# UI
 # -----------------------------
 st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 
@@ -216,7 +221,7 @@ with col_title:
 <div class="header">
   <div style="font-size:26px; font-weight:900;">Tableau de bord - Test Luc Leger</div>
   <div class="small" style="margin-top:6px;">
-    Saisie des résultats, niveau automatique (5 niveaux), Interprétation assaut, Specificite age et applications pour les tireurs.
+    Saisie des résultats, niveau automatique (5 niveaux), Interprétation assaut, Spécificité âge et applications pour les tireurs.
   </div>
 </div>
 """,
@@ -311,7 +316,7 @@ with right:
 
         st.write("")
         st.markdown("<div class='section' style='border-left:12px solid #0f172a;'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Analyse (tireur selectionne)</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Analyse (tireur sélectionné)</div>", unsafe_allow_html=True)
 
         if len(view) > 0:
             selected_row = view.iloc[0]

@@ -106,7 +106,7 @@ def interpret_for_assaut(level5: str) -> Dict[str, str]:
         return {
             "Synthese": "Bon niveau pour l'assaut: volume de travail stable et capacite a relancer.",
             "Point de vigilance": "Risque principal: surcharge si recuperation et progressivite sont negligees.",
-            "Priorite de travail": "Intermittent specifique savate + deplacements + relances structurees.",
+            "Priorite de travail": "Specifique savate (intermittent + déplacements + relances structurées).",
         }
     if level5 == "Tres Bon":
         return {
@@ -184,7 +184,7 @@ class Athlete:
 
 
 # -----------------------------
-# UI (approche safe + accents)
+# UI (approche safe + accents demandes)
 # -----------------------------
 st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 
@@ -216,7 +216,7 @@ with col_title:
 <div class="header">
   <div style="font-size:26px; font-weight:900;">Tableau de bord - Test Luc Leger</div>
   <div class="small" style="margin-top:6px;">
-    Saisie des resultats, niveau automatique (5 niveaux), interpretation assaut, specificite age et applications pour les tireurs.
+    Saisie des résultats, niveau automatique (5 niveaux), Interprétation assaut, Specificite age et applications pour les tireurs.
   </div>
 </div>
 """,
@@ -241,7 +241,7 @@ avg_palier_str = f"{avg_palier:.1f}" if avg_palier is not None else "-"
 k1, k2, k3, k4 = st.columns(4)
 k1.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Participants</div><div style='font-size:26px;font-weight:900;'>{total}</div></div>", unsafe_allow_html=True)
 k2.markdown(f"<div class='kpi'><div style='color:#b91c1c;font-weight:900;'>Masculin</div><div style='font-size:26px;font-weight:900;'>{nb_m}</div></div>", unsafe_allow_html=True)
-k3.markdown(f"<div class='kpi'><div style='color:#1d4ed8;font-weight:900;'>Feminin</div><div style='font-size:26px;font-weight:900;'>{nb_f}</div></div>", unsafe_allow_html=True)
+k3.markdown(f"<div class='kpi'><div style='color:#1d4ed8;font-weight:900;'>Féminin</div><div style='font-size:26px;font-weight:900;'>{nb_f}</div></div>", unsafe_allow_html=True)
 k4.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Palier moyen</div><div style='font-size:26px;font-weight:900;'>{avg_palier_str}</div></div>", unsafe_allow_html=True)
 
 st.write("")
@@ -254,7 +254,7 @@ with left:
 
     prenom = st.text_input("Prénom", placeholder="Ex: Lina")
     age = st.number_input("Âge", min_value=15, max_value=60, value=15, step=1)
-    sexe = st.selectbox("Sexe", options=["M", "F"], format_func=lambda x: "Masculin" if x == "M" else "Feminin")
+    sexe = st.selectbox("Sexe", options=["M", "F"], format_func=lambda x: "Masculin" if x == "M" else "Féminin")
     palier = st.number_input("Palier atteint", min_value=7, max_value=15, value=7, step=1)
 
     if st.button("Ajouter", use_container_width=True, type="primary"):
@@ -269,9 +269,9 @@ with left:
                     palier=int(palier),
                 ),
             )
-            st.success("Resultat ajoute.")
+            st.success("Résultat ajouté.")
         else:
-            st.error("Le prenom est requis.")
+            st.error("Le prénom est requis.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -330,7 +330,7 @@ with right:
   <span class="pill">{sel_prenom}</span>
   <span class="pill">{sel_age} ans</span>
   <span class="pill">Tranche {band}</span>
-  <span class="pill">Sexe {'Masculin' if sel_sexe=='M' else 'Feminin'}</span>
+  <span class="pill">Sexe {'Masculin' if sel_sexe=='M' else 'Féminin'}</span>
   <span class="pill">Palier {sel_palier}</span>
   <span class="pill" style="background:{pill_bg}; margin-left:auto;">Niveau: {lvl5}</span>
 </div>
@@ -338,16 +338,16 @@ with right:
                 unsafe_allow_html=True,
             )
 
-            tab1, tab2, tab3 = st.tabs(["Interpretation assaut", "Specificite age", "Applications (tireur)"])
+            tab1, tab2, tab3 = st.tabs(["Interprétation assaut", "Spécificité âge", "Applications (tireur)"])
 
             with tab1:
                 info = interpret_for_assaut(lvl5)
                 c1, c2, c3 = st.columns(3)
-                c1.markdown("<div class='section' style='border-left:12px solid #b91c1c;'><div class='section-title'>Synthese</div></div>", unsafe_allow_html=True)
+                c1.markdown("<div class='section' style='border-left:12px solid #b91c1c;'><div class='section-title'>Synthèse</div></div>", unsafe_allow_html=True)
                 c1.write(info["Synthese"])
                 c2.markdown("<div class='section' style='border-left:12px solid #f59e0b;'><div class='section-title'>Point de vigilance</div></div>", unsafe_allow_html=True)
                 c2.write(info["Point de vigilance"])
-                c3.markdown("<div class='section' style='border-left:12px solid #1d4ed8;'><div class='section-title'>Priorite de travail</div></div>", unsafe_allow_html=True)
+                c3.markdown("<div class='section' style='border-left:12px solid #1d4ed8;'><div class='section-title'>Priorité de travail</div></div>", unsafe_allow_html=True)
                 c3.write(info["Priorite de travail"])
 
             with tab2:

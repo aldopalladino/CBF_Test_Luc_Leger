@@ -88,9 +88,6 @@ def level_for(sex: str, age: int, palier: int) -> str:
     return to_level5(level_raw(sex, age, palier))
 
 
-# -----------------------------
-# ANALYSE: textes affiches (accents corriges)
-# -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
         return {
@@ -155,8 +152,6 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
     intermittent = [
         {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2 x (6 a 10 répétitions) a intensité élevée, récupération 3 a 4 min entre blocs."},
         {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 répétitions), axe relance et déplacements."},
-    ]
-    specific = [
         {"Code": "ASSAUT", "Application": "Intermittent spécifique assaut", "Detail": "6 x (1 min assaut actif / 1 min léger) avec consignes tactiques."},
         {"Code": "DEPL", "Application": "Déplacements", "Detail": "Ateliers d'appuis (avant/arrière, latéral, pivots), 2 a 3 blocs de 4 min."},
         {"Code": "REL", "Application": "Relances", "Detail": "10 a 15 s explosif / 45 a 50 s récup, 8 a 12 répétitions."},
@@ -166,13 +161,13 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
     if level5 == "Insuffisant":
         return base + [intermittent[0]] + recovery
     if level5 == "Moyen":
-        return base + intermittent + [specific[1]] + recovery
+        return base + intermittent + recovery
     if level5 == "Bon":
-        return base + intermittent + specific + recovery
+        return base + intermittent + recovery
     if level5 == "Très Bon":
-        return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}] + recovery
+        return intermittent[2:] + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}] + recovery
     if level5 == "Excellent":
-        return specific + [{"Code": "QUAL", "Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}] + recovery
+        return intermittent[2:] + [{"Code": "QUAL", "Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}] + recovery
     return []
 
 
@@ -193,7 +188,7 @@ st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 st.markdown(
     """
 <style>
-/* Header sobre uni */
+/* Header sobre uni + marge basse */
 .header {
   padding: 12px 16px;
   border-radius: 16px;
@@ -204,29 +199,31 @@ st.markdown(
 }
 .small { color: rgba(255,255,255,0.85); }
 
-/* Cards */
+/* Section avec bandeau integre */
 .section {
   border-radius: 16px;
-  padding: 16px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
+  overflow: hidden;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
-.section-title {
+.section-header {
+  padding: 10px 16px;
   font-weight: 900;
-  font-size: 16px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size: 15px;
+  color: #0f172a;
+  border-bottom: 1px solid #e5e7eb;
 }
-.dot { width: 10px; height: 10px; border-radius: 999px; display:inline-block; }
-.dot-saisie { background: #94a3b8; }   /* slate-400 (desature) */
-.dot-liste { background: #a1a1aa; }    /* zinc-400 */
-.dot-analyse { background: #64748b; }  /* slate-500 */
+.section-header.saisie { background: #f1f5f9; }
+.section-header.liste  { background: #f8fafc; }
+.section-header.analyse{ background: #eef2f7; }
 
+.section-body { padding: 16px; }
+
+/* KPI cards */
 .kpi { padding: 14px; border-radius: 14px; border: 1px solid #e5e7eb; background: white; }
 
+/* Pills */
 .pill {
   display:inline-block;
   padding: 4px 10px;
@@ -289,7 +286,8 @@ left, right = st.columns([1, 2], gap="large")
 
 with left:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'><span class='dot dot-saisie'></span> Saisie d'un resultat</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header saisie'>Saisie d'un résultat</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-body'>", unsafe_allow_html=True)
 
     prenom = st.text_input("Prénom", placeholder="Ex: Lina")
     age = st.number_input("Âge", min_value=15, max_value=60, value=15, step=1)
@@ -313,11 +311,12 @@ with left:
         else:
             st.error("Le prénom est requis.")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
 with right:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'><span class='dot dot-liste'></span> Liste des tireurs</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header liste'>Liste des tireurs</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-body'>", unsafe_allow_html=True)
 
     query = st.text_input("Recherche", placeholder="Filtrer: prénom, âge, sexe, palier...")
     if total:
@@ -347,12 +346,14 @@ with right:
             mime="text/csv",
             use_container_width=True,
         )
-        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
         st.write("")
 
         st.markdown("<div class='section'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'><span class='dot dot-analyse'></span> Analyse (tireur sélectionné)</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header analyse'>Analyse (tireur sélectionné)</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-body'>", unsafe_allow_html=True)
 
         if len(view) > 0:
             selected_row = view.iloc[0]
@@ -384,12 +385,17 @@ with right:
             with tab1:
                 info = interpret_for_assaut(lvl5)
                 c1, c2, c3 = st.columns(3)
-                c1.markdown("<div class='section'><div class='section-title'><span class='dot dot-analyse'></span> Synthèse</div></div>", unsafe_allow_html=True)
+                c1.markdown("<div class='section'><div class='section-header analyse'>Synthèse</div><div class='section-body'>", unsafe_allow_html=True)
                 c1.write(info["Synthese"])
-                c2.markdown("<div class='section'><div class='section-title'><span class='dot dot-liste'></span> Point de vigilance</div></div>", unsafe_allow_html=True)
+                c1.markdown("</div></div>", unsafe_allow_html=True)
+
+                c2.markdown("<div class='section'><div class='section-header liste'>Point de vigilance</div><div class='section-body'>", unsafe_allow_html=True)
                 c2.write(info["Point de vigilance"])
-                c3.markdown("<div class='section'><div class='section-title'><span class='dot dot-saisie'></span> Priorité de travail</div></div>", unsafe_allow_html=True)
+                c2.markdown("</div></div>", unsafe_allow_html=True)
+
+                c3.markdown("<div class='section'><div class='section-header saisie'>Priorité de travail</div><div class='section-body'>", unsafe_allow_html=True)
                 c3.write(info["Priorite de travail"])
+                c3.markdown("</div></div>", unsafe_allow_html=True)
 
             with tab2:
                 note = age_specific_notes(sel_age)
@@ -403,10 +409,10 @@ with right:
                 else:
                     st.dataframe(pd.DataFrame(work), use_container_width=True, hide_index=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
     else:
         st.info("Ajoute au moins un tireur pour afficher la liste et l'analyse.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
 st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l'entrainement en Savate.")

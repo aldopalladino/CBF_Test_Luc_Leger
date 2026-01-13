@@ -617,7 +617,7 @@ with right:
                 st.write(f"**{age_note['Titre']}**")
                 st.write(age_note["Note"])
 
-            with tab3:
+           with tab3:
     if not travail:
         st.info("Aucune recommandation disponible.")
     else:

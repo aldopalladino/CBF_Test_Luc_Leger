@@ -88,6 +88,9 @@ def level_for(sex: str, age: int, palier: int) -> str:
     return to_level5(level_raw(sex, age, palier))
 
 
+# -----------------------------
+# ANALYSE: textes affiches (accents corriges)
+# -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
         return {
@@ -190,22 +193,59 @@ st.set_page_config(page_title="Dashboard Luc Leger - CBF", layout="wide")
 st.markdown(
     """
 <style>
-.section { border-radius: 16px; padding: 16px; border: 1px solid #e5e7eb; background: #ffffff; }
-.section-title { font-weight: 900; font-size: 16px; margin-bottom: 10px; }
+/* Header sobre uni */
+.header {
+  padding: 12px 16px;
+  border-radius: 16px;
+  color: white;
+  background: #0f172a;
+  border: 1px solid #1f2937;
+  margin-bottom: 12px;
+}
+.small { color: rgba(255,255,255,0.85); }
+
+/* Cards */
+.section {
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.section-title {
+  font-weight: 900;
+  font-size: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dot { width: 10px; height: 10px; border-radius: 999px; display:inline-block; }
+.dot-saisie { background: #94a3b8; }   /* slate-400 (desature) */
+.dot-liste { background: #a1a1aa; }    /* zinc-400 */
+.dot-analyse { background: #64748b; }  /* slate-500 */
+
 .kpi { padding: 14px; border-radius: 14px; border: 1px solid #e5e7eb; background: white; }
-.header { padding: 16px; border-radius: 18px; color: white;
-  background: linear-gradient(90deg, #b91c1c 0%, #1d4ed8 55%, #0f172a 100%); }
-.small { color: rgba(255,255,255,0.92); }
-.pill { display:inline-block; padding: 4px 10px; border-radius: 999px; border:1px solid #e5e7eb; font-size: 12px; font-weight: 800; background: #f1f5f9; }
+
+.pill {
+  display:inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border:1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 800;
+  background: #f1f5f9;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
+# Header + logo
 col_logo, col_title = st.columns([1, 7], vertical_alignment="center")
 with col_logo:
     if os.path.exists("Logo Rond.png"):
-        st.image("Logo Rond.png", width=84)
+        st.image("Logo Rond.png", width=72)
     else:
         st.markdown("<div class='pill'>Logo manquant: Logo Rond.png</div>", unsafe_allow_html=True)
 
@@ -213,7 +253,7 @@ with col_title:
     st.markdown(
         """
 <div class="header">
-  <div style="font-size:26px; font-weight:900;">Tableau de bord - Test Luc Leger</div>
+  <div style="font-size:24px; font-weight:900;">Tableau de bord - Test Luc Leger</div>
   <div class="small" style="margin-top:6px;">
     Saisie des résultats, niveau automatique (5 niveaux), Interprétation assaut, Spécificité âge et applications pour les tireurs.
   </div>
@@ -239,8 +279,8 @@ avg_palier_str = f"{avg_palier:.1f}" if avg_palier is not None else "-"
 
 k1, k2, k3, k4 = st.columns(4)
 k1.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Participants</div><div style='font-size:26px;font-weight:900;'>{total}</div></div>", unsafe_allow_html=True)
-k2.markdown(f"<div class='kpi'><div style='color:#b91c1c;font-weight:900;'>Masculin</div><div style='font-size:26px;font-weight:900;'>{nb_m}</div></div>", unsafe_allow_html=True)
-k3.markdown(f"<div class='kpi'><div style='color:#1d4ed8;font-weight:900;'>Féminin</div><div style='font-size:26px;font-weight:900;'>{nb_f}</div></div>", unsafe_allow_html=True)
+k2.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Masculin</div><div style='font-size:26px;font-weight:900;'>{nb_m}</div></div>", unsafe_allow_html=True)
+k3.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Féminin</div><div style='font-size:26px;font-weight:900;'>{nb_f}</div></div>", unsafe_allow_html=True)
 k4.markdown(f"<div class='kpi'><div style='color:#0f172a;font-weight:900;'>Palier moyen</div><div style='font-size:26px;font-weight:900;'>{avg_palier_str}</div></div>", unsafe_allow_html=True)
 
 st.write("")
@@ -248,15 +288,14 @@ st.write("")
 left, right = st.columns([1, 2], gap="large")
 
 with left:
-    st.markdown("<div class='section' style='border-left:12px solid #b91c1c;'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>Saisie d'un resultat</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'><span class='dot dot-saisie'></span> Saisie d'un resultat</div>", unsafe_allow_html=True)
 
     prenom = st.text_input("Prénom", placeholder="Ex: Lina")
     age = st.number_input("Âge", min_value=15, max_value=60, value=15, step=1)
     sexe = st.selectbox("Sexe", options=["M", "F"], format_func=lambda x: "Masculin" if x == "M" else "Féminin")
     palier = st.number_input("Palier atteint", min_value=7, max_value=15, value=7, step=1)
 
-    # ---- CHANGEMENT: bouton Evaluer + rerun pour affichage immediat
     if st.button("Évaluer", use_container_width=True, type="primary"):
         if prenom.strip():
             st.session_state.athletes.insert(
@@ -277,8 +316,8 @@ with left:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-    st.markdown("<div class='section' style='border-left:12px solid #1d4ed8;'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>Liste des tireurs</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section'>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'><span class='dot dot-liste'></span> Liste des tireurs</div>", unsafe_allow_html=True)
 
     query = st.text_input("Recherche", placeholder="Filtrer: prénom, âge, sexe, palier...")
     if total:
@@ -311,8 +350,9 @@ with right:
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.write("")
-        st.markdown("<div class='section' style='border-left:12px solid #0f172a;'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>Analyse (tireur sélectionné)</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='section'>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'><span class='dot dot-analyse'></span> Analyse (tireur sélectionné)</div>", unsafe_allow_html=True)
 
         if len(view) > 0:
             selected_row = view.iloc[0]
@@ -344,11 +384,11 @@ with right:
             with tab1:
                 info = interpret_for_assaut(lvl5)
                 c1, c2, c3 = st.columns(3)
-                c1.markdown("<div class='section' style='border-left:12px solid #b91c1c;'><div class='section-title'>Synthèse</div></div>", unsafe_allow_html=True)
+                c1.markdown("<div class='section'><div class='section-title'><span class='dot dot-analyse'></span> Synthèse</div></div>", unsafe_allow_html=True)
                 c1.write(info["Synthese"])
-                c2.markdown("<div class='section' style='border-left:12px solid #f59e0b;'><div class='section-title'>Point de vigilance</div></div>", unsafe_allow_html=True)
+                c2.markdown("<div class='section'><div class='section-title'><span class='dot dot-liste'></span> Point de vigilance</div></div>", unsafe_allow_html=True)
                 c2.write(info["Point de vigilance"])
-                c3.markdown("<div class='section' style='border-left:12px solid #1d4ed8;'><div class='section-title'>Priorité de travail</div></div>", unsafe_allow_html=True)
+                c3.markdown("<div class='section'><div class='section-title'><span class='dot dot-saisie'></span> Priorité de travail</div></div>", unsafe_allow_html=True)
                 c3.write(info["Priorite de travail"])
 
             with tab2:
@@ -364,6 +404,7 @@ with right:
                     st.dataframe(pd.DataFrame(work), use_container_width=True, hide_index=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
+
     else:
         st.info("Ajoute au moins un tireur pour afficher la liste et l'analyse.")
         st.markdown("</div>", unsafe_allow_html=True)

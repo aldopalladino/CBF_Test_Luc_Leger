@@ -617,20 +617,20 @@ with right:
                 st.write(f"**{age_note['Titre']}**")
                 st.write(age_note["Note"])
 
-           with tab3:
-    if not travail:
+            with tab3:
+                if not travail:
         st.info("Aucune recommandation disponible.")
-    else:
+                else:
         col_tbl, col_pdf = st.columns([4, 1], vertical_alignment="bottom")
 
-        with col_tbl:
+                    with col_tbl:
             st.dataframe(
                 pd.DataFrame(travail)[["Application", "Detail"]],
                 use_container_width=True,
                 hide_index=True,
             )
 
-        with col_pdf:
+                    with col_pdf:
             pdf_bytes = build_pdf_fiche(
                 nom=sel_nom,
                 prenom=sel_prenom,
@@ -676,3 +676,4 @@ with right:
 """,
                 unsafe_allow_html=True,
             )
+

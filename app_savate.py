@@ -90,7 +90,7 @@ def level_for(sex: str, age: int, palier: int) -> str:
 
 
 # -----------------------------
-# ANALYSE: textes affiches (avec accents)
+# ANALYSE: textes affiches (accents corriges)
 # -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
@@ -130,41 +130,39 @@ def age_specific_notes(age: int) -> Dict[str, str]:
     if age <= 19:
         return {
             "Titre": "Spécificité 15-19 ans",
-            "Note": "Priorité a la progressivite: technique propre, déplacements, developpement aerobie. Eviter la surcharge lactique, privilegier des formats courts et ludiques.",
+            "Note": "Priorité a la progressivite: technique propre, déplacements, developpement aérobie. Éviter la surcharge lactique, privilégier des formats courts et ludiques.",
         }
     if age <= 34:
         return {
             "Titre": "Spécificité 20-34 ans",
-            "Note": "Fenetre ideale pour developper la VMA et la tolerance a l'intensite. Monter progressivement la densite (intermittent, circuits spécifiques assaut).",
+            "Note": "Fenêtre idéale pour développer la VMA et la tolérance a l'intensité. Monter progressivement la densité (intermittent, circuits spécifiques assaut).",
         }
     if age <= 44:
         return {
             "Titre": "Spécificité 35-44 ans",
-            "Note": "Accent sur la récupération et la regularite. Maintenir la VMA via intermittents courts et renforcer l'economie des déplacements.",
+            "Note": "Accent sur la récupération et la régularité. Maintenir la VMA via intermittents courts et renforcer l'économie des déplacements.",
         }
     return {
         "Titre": "Spécificité 45-60 ans",
-        "Note": "Priorité: prevention (tendons, mollets, ischios), echauffement long, montee en charge progressive. Intermittent court maitrise et endurance fondamentale reguliere.",
+        "Note": "Priorité: prévention (tendons, mollets, ischios), échauffement long, montée en charge progressive. Intermittent court maîtrisé et endurance fondamentale régulière.",
     }
 
 
 def suggested_work(level5: str) -> List[Dict[str, str]]:
-    # Ici, on garde les textes simples; l'onglet Applications est inclus dans la section Analyse,
-    # donc on applique aussi les accents demandés sur les mots sensibles.
     base = [
         {"Code": "EF", "Application": "Endurance fondamentale", "Detail": "20 a 45 min en aisance respiratoire, 1 a 2 fois par semaine."},
-        {"Code": "TECH", "Application": "Technique basse intensite", "Detail": "Rounds techniques (shadow, cibles) sans fatigue excessive."},
+        {"Code": "TECH", "Application": "Technique basse intensité", "Detail": "Rounds techniques (shadow, cibles) sans fatigue excessive."},
     ]
     intermittent = [
-        {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2 x (6 a 10 repetitions) a intensite elevee, recuperation 3 a 4 min entre blocs."},
-        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 repetitions), axe relance et déplacements."},
+        {"Code": "30/30", "Application": "Intermittent 30/30", "Detail": "2 x (6 a 10 répétitions) a intensité élevée, récupération 3 a 4 min entre blocs."},
+        {"Code": "15/15", "Application": "Intermittent 15/15", "Detail": "2 x (10 a 20 répétitions), axe relance et déplacements."},
     ]
     specific = [
-        {"Code": "ASSAUT", "Application": "Intermittent spécifique assaut", "Detail": "6 x (1 min assaut actif / 1 min leger) avec consignes tactiques."},
-        {"Code": "DEPL", "Application": "Déplacements", "Detail": "Ateliers d'appuis (avant/arriere, lateral, pivots), 2 a 3 blocs de 4 min."},
-        {"Code": "REL", "Application": "Relances", "Detail": "10 a 15 s explosif / 45 a 50 s recup, 8 a 12 repetitions."},
+        {"Code": "ASSAUT", "Application": "Intermittent spécifique assaut", "Detail": "6 x (1 min assaut actif / 1 min léger) avec consignes tactiques."},
+        {"Code": "DEPL", "Application": "Déplacements", "Detail": "Ateliers d'appuis (avant/arrière, latéral, pivots), 2 a 3 blocs de 4 min."},
+        {"Code": "REL", "Application": "Relances", "Detail": "10 a 15 s explosif / 45 a 50 s récup, 8 a 12 répétitions."},
     ]
-    recovery = [{"Code": "REC", "Application": "Récupération", "Detail": "Marche, mobilite, sommeil, hydratation, 1 a 2 jours faciles par semaine."}]
+    recovery = [{"Code": "REC", "Application": "Récupération", "Detail": "Marche, mobilité, sommeil, hydratation, 1 a 2 jours faciles par semaine."}]
 
     if level5 == "Insuffisant":
         return base + [intermittent[0]] + recovery
@@ -173,9 +171,9 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
     if level5 == "Bon":
         return base + intermittent + specific + recovery
     if level5 == "Tres Bon":
-        return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min recup) en controle."}] + recovery
+        return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}] + recovery
     if level5 == "Excellent":
-        return specific + [{"Code": "QUAL", "Application": "Qualite > volume", "Detail": "Seances plus courtes, intensite ciblee, exigence forte sur la récupération."}] + recovery
+        return specific + [{"Code": "QUAL", "Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}] + recovery
     return []
 
 

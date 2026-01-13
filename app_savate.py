@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # app_savate.py
-# Dashboard Luc Leger (club) - Streamlit
-# Lancer: streamlit run app_savate.py
+# Dashboard Luc Léger (club) - Streamlit
+# Lancer : streamlit run app_savate.py
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from reportlab.lib.utils import ImageReader
 
 
 # -----------------------------
-# Bareme club (pedagogique)
+# Barème club (pédagogique)
 # -----------------------------
 BAREME: Dict[str, Dict[str, Dict[int, str]]] = {
     "M": {
@@ -183,7 +183,7 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
 
 
 # -----------------------------
-# PDF helper
+# PDF
 # -----------------------------
 def _wrap_text(c: canvas.Canvas, text: str, x: float, y: float, max_width: float, leading: float = 12) -> float:
     if not text:
@@ -224,7 +224,6 @@ def build_pdf_fiche(
     margin = 18 * mm
     y = height - margin
 
-    # Logo
     if os.path.exists(logo_path):
         try:
             img = ImageReader(logo_path)
@@ -238,7 +237,6 @@ def build_pdf_fiche(
     c.drawString(margin + 22 * mm, y - 13 * mm, "CBF Montmorency - Synthese d'evaluation")
     y -= 26 * mm
 
-    # Infos
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin, y, "Informations tireur")
     y -= 8 * mm
@@ -257,7 +255,6 @@ def build_pdf_fiche(
         y -= 5 * mm
     y -= 4 * mm
 
-    # Interpretation
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin, y, "Analyse - Interpretation assaut")
     y -= 7 * mm
@@ -283,7 +280,6 @@ def build_pdf_fiche(
     y = _wrap_text(c, interpretation.get("Priorite de travail", ""), margin, y, width - 2 * margin)
     y -= 4 * mm
 
-    # Specificite age
     if y < 70 * mm:
         c.showPage()
         y = height - margin
@@ -291,7 +287,6 @@ def build_pdf_fiche(
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin, y, "Analyse - Specificite age")
     y -= 7 * mm
-
     c.setFont("Helvetica-Bold", 10)
     c.drawString(margin, y, age_note.get("Titre", ""))
     y -= 5 * mm
@@ -299,7 +294,6 @@ def build_pdf_fiche(
     y = _wrap_text(c, age_note.get("Note", ""), margin, y, width - 2 * margin)
     y -= 4 * mm
 
-    # Travail specifique
     if y < 70 * mm:
         c.showPage()
         y = height - margin
@@ -342,6 +336,9 @@ def build_pdf_fiche(
     return buf.getvalue()
 
 
+# -----------------------------
+# Model
+# -----------------------------
 @dataclass
 class Athlete:
     id: str
@@ -453,9 +450,7 @@ st.write("")
 
 left, right = st.columns([1, 2], gap="large")
 
-# -----------------------------
-# Section Saisie
-# -----------------------------
+# ---- Saisie
 with left:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='section-header saisie'>Saisie d'un résultat</div>", unsafe_allow_html=True)
@@ -488,9 +483,7 @@ with left:
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-# -----------------------------
-# Section Liste + Analyse
-# -----------------------------
+# ---- Liste + Analyse
 with right:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='section-header liste'>Liste des tireurs</div>", unsafe_allow_html=True)
@@ -516,15 +509,7 @@ with right:
         view["niveau"] = view.apply(lambda r: level_for(str(r["sexe"]), int(r["age"]), int(r["palier"])), axis=1)
 
         view_display = view[["nom", "prenom", "age", "sexe", "palier", "niveau", "date_saisie"]].rename(
-            columns={
-                "nom": "Nom",
-                "prenom": "Prénom",
-                "age": "Âge",
-                "sexe": "Sexe",
-                "palier": "Palier",
-                "niveau": "Niveau",
-                "date_saisie": "Date de saisie",
-            }
+            columns={"nom": "Nom", "prenom": "Prénom", "age": "Âge", "sexe": "Sexe", "palier": "Palier", "niveau": "Niveau", "date_saisie": "Date de saisie"}
         )
 
         with col_export:
@@ -538,7 +523,6 @@ with right:
             )
 
         st.dataframe(view_display, use_container_width=True, hide_index=True)
-
         st.markdown("</div></div>", unsafe_allow_html=True)
 
         st.write("")
@@ -564,9 +548,7 @@ with right:
             age_note = age_specific_notes(sel_age)
             travail = suggested_work(lvl5)
 
-            # Infos + badge niveau (droite)
             col_info, col_level = st.columns([4, 1], vertical_alignment="top")
-
             with col_info:
                 st.markdown(
                     f"""
@@ -596,6 +578,7 @@ with right:
 
             with tab1:
                 c1, c2, c3 = st.columns(3)
+
                 c1.markdown("<div class='section'><div class='section-header analyse'>Synthèse</div><div class='section-body'>", unsafe_allow_html=True)
                 c1.write(interpretation["Synthese"])
                 c1.markdown("</div></div>", unsafe_allow_html=True)
@@ -612,46 +595,43 @@ with right:
                 st.write(f"**{age_note['Titre']}**")
                 st.write(age_note["Note"])
 
-            # Tab 3: tableau + bouton PDF aligne a droite sous le tableau
             with tab3:
                 if not travail:
                     st.info("Aucune recommandation disponible.")
                 else:
-                    col_tbl, col_pdf = st.columns([4, 1], vertical_alignment="bottom")
+                    st.dataframe(pd.DataFrame(travail)[["Application", "Detail"]], use_container_width=True, hide_index=True)
 
-                    with col_tbl:
-                        st.dataframe(pd.DataFrame(travail)[["Application", "Detail"]], use_container_width=True, hide_index=True)
+            # ---- Bouton PDF hors des onglets, même proportion que le badge Niveau
+            st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-                   
-                        st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
- with col_pdf:
-                        pdf_bytes = build_pdf_fiche(
-                            nom=sel_nom,
-                            prenom=sel_prenom,
-                            date_saisie=sel_date,
-                            age=sel_age,
-                            sexe=sel_sexe,
-                            palier=sel_palier,
-                            niveau=lvl5,
-                            interpretation=interpretation,
-                            age_note=age_note,
-                            travail=travail,
-                            logo_path="Logo Rond.png",
-                        )
+            col_left, col_pdf = st.columns([4, 1], vertical_alignment="center")
+            with col_pdf:
+                pdf_bytes = build_pdf_fiche(
+                    nom=sel_nom,
+                    prenom=sel_prenom,
+                    date_saisie=sel_date,
+                    age=sel_age,
+                    sexe=sel_sexe,
+                    palier=sel_palier,
+                    niveau=lvl5,
+                    interpretation=interpretation,
+                    age_note=age_note,
+                    travail=travail,
+                    logo_path="Logo Rond.png",
+                )
 
-                        b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-                        filename = (
-                            f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}.pdf".replace(" ", "_")
-                        )
+                b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+                filename = (
+                    f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}".replace(" ", "_") + ".pdf"
+                )
 
-                        # Espace pour placer le bouton "plus bas"
-                        st.markdown(
-                            f"""
+                st.markdown(
+                    f"""
 <div style="display:flex; justify-content:flex-end;">
   <a href="data:application/pdf;base64,{b64}" download="{filename}"
      style="
         display:inline-block;
-        padding:10px 12px;
+        padding:10px 14px;
         border-radius:10px;
         background:#0f172a;
         color:white;
@@ -665,8 +645,8 @@ with right:
   </a>
 </div>
 """,
-                            unsafe_allow_html=True,
-                        )
+                    unsafe_allow_html=True,
+                )
 
         st.markdown("</div></div>", unsafe_allow_html=True)
 
@@ -675,4 +655,3 @@ with right:
         st.markdown("</div></div>", unsafe_allow_html=True)
 
 st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l'entrainement en Savate.")
-

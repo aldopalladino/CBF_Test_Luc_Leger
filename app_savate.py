@@ -14,6 +14,8 @@ from typing import Dict, List
 
 import pandas as pd
 import streamlit as st
+import base64
+
 
 # PDF
 from reportlab.lib.pagesizes import A4
@@ -594,13 +596,6 @@ with right:
                 travail=travail,
                 logo_path="Logo Rond.png",
             )
-            st.download_button(
-                "Télécharger la fiche PDF",
-                data=pdf_bytes,
-                file_name=f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}.pdf".replace(" ", "_"),
-                mime="application/pdf",
-                use_container_width=False,
-            )
 
             tab1, tab2, tab3 = st.tabs(["Interprétation assaut", "Spécificité âge", "Travail spécifique"])
 
@@ -623,15 +618,63 @@ with right:
                 st.write(age_note["Note"])
 
             with tab3:
-                if not travail:
-                    st.info("Aucune recommandation disponible.")
-                else:
-                    st.dataframe(pd.DataFrame(travail)[["Application", "Detail"]], use_container_width=True, hide_index=True)
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
+               with tab3:
+    if not travail:
+        st.info("Aucune recommandation disponible.")
     else:
-        st.info("Ajoute au moins un tireur pour afficher la liste et l'analyse.")
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        col_tbl, col_pdf = st.columns([4, 1], vertical_alignment="bottom")
 
-st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l'entrainement en Savate.")
+        with col_tbl:
+            st.dataframe(
+                pd.DataFrame(travail)[["Application", "Detail"]],
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        with col_pdf:
+            pdf_bytes = build_pdf_fiche(
+                nom=sel_nom,
+                prenom=sel_prenom,
+                date_saisie=sel_date,
+                age=sel_age,
+                sexe=sel_sexe,
+                palier=sel_palier,
+                niveau=lvl5,
+                interpretation=interpretation,
+                age_note=age_note,
+                travail=travail,
+                logo_path="Logo Rond.png",
+            )
+
+            b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            filename = (
+                f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}.pdf"
+                .replace(" ", "_")
+            )
+
+            # Option: accentuer l'effet "plus bas"
+            st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
+
+            st.markdown(
+                f"""
+<div style="display:flex; justify-content:flex-end;">
+  <a href="data:application/pdf;base64,{b64}" download="{filename}"
+     style="
+        display:inline-block;
+        padding:10px 12px;
+        border-radius:10px;
+        background:#0f172a;
+        color:white;
+        text-decoration:none;
+        font-weight:800;
+        font-size:13px;
+        border:1px solid #1f2937;
+        white-space:nowrap;
+     ">
+     Télécharger la fiche PDF
+  </a>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
+

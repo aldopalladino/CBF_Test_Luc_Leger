@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # app_savate.py
 # Dashboard Luc Leger (club) - Streamlit
-# Saisie: prenom, age, sexe, palier | Sortie: niveau (5), interpretation assaut, specificite age, applications
 # Lancer: streamlit run app_savate.py
 
 from __future__ import annotations
@@ -48,7 +47,7 @@ LEVEL5_COLORS = {
     "Insuffisant": "#fee2e2",
     "Moyen": "#ffedd5",
     "Bon": "#dcfce7",
-    "Tres Bon": "#bbf7d0",
+    "Très Bon": "#bbf7d0",
     "Excellent": "#cffafe",
 }
 
@@ -79,7 +78,7 @@ def to_level5(raw: str) -> str:
     if raw == "Bon":
         return "Bon"
     if raw == "Tres bon":
-        return "Tres Bon"
+        return "Très Bon"
     if raw in ("Excellent", "Elite", "Elite+"):
         return "Excellent"
     return "-"
@@ -89,9 +88,6 @@ def level_for(sex: str, age: int, palier: int) -> str:
     return to_level5(level_raw(sex, age, palier))
 
 
-# -----------------------------
-# ANALYSE: textes affiches (accents corriges)
-# -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
         return {
@@ -111,9 +107,9 @@ def interpret_for_assaut(level5: str) -> Dict[str, str]:
             "Point de vigilance": "Risque principal: surcharge si recuperation et progressivite sont negligees.",
             "Priorite de travail": "Specifique savate (intermittent + déplacements + relances structurées).",
         }
-    if level5 == "Tres Bon":
+    if level5 == "Très Bon":
         return {
-            "Synthese": "Tres bon moteur: enchainement de reprises et relances frequentes possibles.",
+            "Synthese": "Très bon moteur: enchainement de reprises et relances frequentes possibles.",
             "Point de vigilance": "Risque: partir trop vite (sur-regime) plutot qu'une limite cardio.",
             "Priorite de travail": "Affutage, qualite des relances, lactique court en controle, tactique.",
         }
@@ -170,7 +166,7 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
         return base + intermittent + [specific[1]] + recovery
     if level5 == "Bon":
         return base + intermittent + specific + recovery
-    if level5 == "Tres Bon":
+    if level5 == "Très Bon":
         return specific + [{"Code": "LACT", "Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}] + recovery
     if level5 == "Excellent":
         return specific + [{"Code": "QUAL", "Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}] + recovery
@@ -260,7 +256,8 @@ with left:
     sexe = st.selectbox("Sexe", options=["M", "F"], format_func=lambda x: "Masculin" if x == "M" else "Féminin")
     palier = st.number_input("Palier atteint", min_value=7, max_value=15, value=7, step=1)
 
-    if st.button("Ajouter", use_container_width=True, type="primary"):
+    # ---- CHANGEMENT: bouton Evaluer + rerun pour affichage immediat
+    if st.button("Évaluer", use_container_width=True, type="primary"):
         if prenom.strip():
             st.session_state.athletes.insert(
                 0,
@@ -273,6 +270,7 @@ with left:
                 ),
             )
             st.success("Résultat ajouté.")
+            st.rerun()
         else:
             st.error("Le prénom est requis.")
 

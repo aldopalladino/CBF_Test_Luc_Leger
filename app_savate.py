@@ -618,7 +618,6 @@ with right:
                 st.write(age_note["Note"])
 
             with tab3:
-               with tab3:
     if not travail:
         st.info("Aucune recommandation disponible.")
     else:
@@ -652,7 +651,7 @@ with right:
                 .replace(" ", "_")
             )
 
-            # Option: accentuer l'effet "plus bas"
+            # Espace vertical pour placer le bouton bien plus bas
             st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
 
             st.markdown(
@@ -677,4 +676,3 @@ with right:
 """,
                 unsafe_allow_html=True,
             )
-

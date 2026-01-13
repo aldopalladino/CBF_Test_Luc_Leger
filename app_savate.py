@@ -622,7 +622,9 @@ with right:
                     with col_tbl:
                         st.dataframe(pd.DataFrame(travail)[["Application", "Detail"]], use_container_width=True, hide_index=True)
 
-                    with col_pdf:
+                   
+                        st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
+ with col_pdf:
                         pdf_bytes = build_pdf_fiche(
                             nom=sel_nom,
                             prenom=sel_prenom,
@@ -643,8 +645,6 @@ with right:
                         )
 
                         # Espace pour placer le bouton "plus bas"
-                        st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
-
                         st.markdown(
                             f"""
 <div style="display:flex; justify-content:flex-end;">
@@ -675,3 +675,4 @@ with right:
         st.markdown("</div></div>", unsafe_allow_html=True)
 
 st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l'entrainement en Savate.")
+

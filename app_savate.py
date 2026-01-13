@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import base64
 import os
 import uuid
 from dataclasses import dataclass, asdict
@@ -14,10 +15,8 @@ from typing import Dict, List
 
 import pandas as pd
 import streamlit as st
-import base64
 
-
-# PDF
+# PDF (ReportLab)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
@@ -25,7 +24,7 @@ from reportlab.lib.utils import ImageReader
 
 
 # -----------------------------
-# BAREME CLUB (pedagogique)
+# Bareme club (pedagogique)
 # -----------------------------
 BAREME: Dict[str, Dict[str, Dict[int, str]]] = {
     "M": {
@@ -98,7 +97,7 @@ def level_for(sex: str, age: int, palier: int) -> str:
 
 
 # -----------------------------
-# ANALYSE (accents conserves sur les mots sensibles)
+# Analyse (textes)
 # -----------------------------
 def interpret_for_assaut(level5: str) -> Dict[str, str]:
     if level5 == "Insuffisant":
@@ -157,7 +156,6 @@ def age_specific_notes(age: int) -> Dict[str, str]:
 
 
 def suggested_work(level5: str) -> List[Dict[str, str]]:
-    # NOTE: Colonne "Code" supprimée -> uniquement Application + Détail
     base = [
         {"Application": "Endurance fondamentale", "Detail": "20 a 45 min en aisance respiratoire, 1 a 2 fois par semaine."},
         {"Application": "Technique basse intensité", "Detail": "Rounds techniques (shadow, cibles) sans fatigue excessive."},
@@ -178,21 +176,16 @@ def suggested_work(level5: str) -> List[Dict[str, str]]:
     if level5 == "Bon":
         return base + intermittent + recovery
     if level5 == "Très Bon":
-        return intermittent[2:] + [
-            {"Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}
-        ] + recovery
+        return intermittent[2:] + [{"Application": "Lactique court", "Detail": "4 a 6 x (30 a 45 s dur / 2 a 3 min récup) en contrôle."}] + recovery
     if level5 == "Excellent":
-        return intermittent[2:] + [
-            {"Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}
-        ] + recovery
+        return intermittent[2:] + [{"Application": "Qualité > volume", "Detail": "Séances plus courtes, intensité ciblée, exigence forte sur la récupération."}] + recovery
     return []
 
 
 # -----------------------------
-# PDF
+# PDF helper
 # -----------------------------
 def _wrap_text(c: canvas.Canvas, text: str, x: float, y: float, max_width: float, leading: float = 12) -> float:
-    """Draw wrapped text. Returns new y."""
     if not text:
         return y
     words = text.split()
@@ -228,8 +221,6 @@ def build_pdf_fiche(
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     width, height = A4
-
-    # Header
     margin = 18 * mm
     y = height - margin
 
@@ -243,17 +234,14 @@ def build_pdf_fiche(
 
     c.setFont("Helvetica-Bold", 16)
     c.drawString(margin + 22 * mm, y - 6 * mm, "Fiche individuelle - Test Luc Leger")
-
     c.setFont("Helvetica", 10)
     c.drawString(margin + 22 * mm, y - 13 * mm, "CBF Montmorency - Synthese d'evaluation")
-
     y -= 26 * mm
 
-    # Identite
+    # Infos
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin, y, "Informations tireur")
     y -= 8 * mm
-
     c.setFont("Helvetica", 10)
     lignes = [
         f"Nom: {nom}",
@@ -267,7 +255,6 @@ def build_pdf_fiche(
     for l in lignes:
         c.drawString(margin, y, l)
         y -= 5 * mm
-
     y -= 4 * mm
 
     # Interpretation
@@ -296,7 +283,7 @@ def build_pdf_fiche(
     y = _wrap_text(c, interpretation.get("Priorite de travail", ""), margin, y, width - 2 * margin)
     y -= 4 * mm
 
-    # Spécificité âge
+    # Specificite age
     if y < 70 * mm:
         c.showPage()
         y = height - margin
@@ -312,7 +299,7 @@ def build_pdf_fiche(
     y = _wrap_text(c, age_note.get("Note", ""), margin, y, width - 2 * margin)
     y -= 4 * mm
 
-    # Travail spécifique
+    # Travail specifique
     if y < 70 * mm:
         c.showPage()
         y = height - margin
@@ -348,10 +335,8 @@ def build_pdf_fiche(
         y = _wrap_text(c, det, margin + 70 * mm, y, width - margin - (margin + 70 * mm))
         y -= 2 * mm
 
-    # Footer
     c.setFont("Helvetica", 8)
     c.drawString(margin, 12 * mm, f"Genere le {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-
     c.showPage()
     c.save()
     return buf.getvalue()
@@ -362,7 +347,7 @@ class Athlete:
     id: str
     nom: str
     prenom: str
-    date_saisie: str  # ISO string
+    date_saisie: str
     age: int
     sexe: str
     palier: int
@@ -468,6 +453,9 @@ st.write("")
 
 left, right = st.columns([1, 2], gap="large")
 
+# -----------------------------
+# Section Saisie
+# -----------------------------
 with left:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='section-header saisie'>Saisie d'un résultat</div>", unsafe_allow_html=True)
@@ -500,17 +488,18 @@ with left:
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
+# -----------------------------
+# Section Liste + Analyse
+# -----------------------------
 with right:
     st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.markdown("<div class='section-header liste'>Liste des tireurs</div>", unsafe_allow_html=True)
     st.markdown("<div class='section-body'>", unsafe_allow_html=True)
 
-    # Recherche + export sur la meme ligne
     col_search, col_export = st.columns([4, 1], vertical_alignment="center")
     with col_search:
         query = st.text_input("Recherche", placeholder="Filtrer : prénom, âge, sexe, palier...", label_visibility="collapsed")
 
-    # Filtrage
     if total:
         view = df.copy()
         if query.strip():
@@ -527,7 +516,15 @@ with right:
         view["niveau"] = view.apply(lambda r: level_for(str(r["sexe"]), int(r["age"]), int(r["palier"])), axis=1)
 
         view_display = view[["nom", "prenom", "age", "sexe", "palier", "niveau", "date_saisie"]].rename(
-            columns={"nom": "Nom", "prenom": "Prénom", "age": "Âge", "sexe": "Sexe", "palier": "Palier", "niveau": "Niveau", "date_saisie": "Date de saisie"}
+            columns={
+                "nom": "Nom",
+                "prenom": "Prénom",
+                "age": "Âge",
+                "sexe": "Sexe",
+                "palier": "Palier",
+                "niveau": "Niveau",
+                "date_saisie": "Date de saisie",
+            }
         )
 
         with col_export:
@@ -563,39 +560,37 @@ with right:
             lvl5 = level_for(sel_sexe, sel_age, sel_palier)
             band = age_band(sel_age)
 
-            pill_bg = LEVEL5_COLORS.get(lvl5, "#e5e7eb")
-            st.markdown(
-                f"""
+            interpretation = interpret_for_assaut(lvl5)
+            age_note = age_specific_notes(sel_age)
+            travail = suggested_work(lvl5)
+
+            # Infos + badge niveau (droite)
+            col_info, col_level = st.columns([4, 1], vertical_alignment="top")
+
+            with col_info:
+                st.markdown(
+                    f"""
 <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
   <span class="pill">{sel_nom} {sel_prenom}</span>
   <span class="pill">{sel_age} ans</span>
   <span class="pill">Tranche {band}</span>
   <span class="pill">Sexe {'Masculin' if sel_sexe=='M' else 'Féminin'}</span>
   <span class="pill">Palier {sel_palier}</span>
-  <span class="pill" style="background:{pill_bg}; margin-left:auto;">Niveau: {lvl5}</span>
 </div>
 """,
-                unsafe_allow_html=True,
-            )
+                    unsafe_allow_html=True,
+                )
 
-            interpretation = interpret_for_assaut(lvl5)
-            age_note = age_specific_notes(sel_age)
-            travail = suggested_work(lvl5)
-
-            # Bouton PDF (fiche individuelle)
-            pdf_bytes = build_pdf_fiche(
-                nom=sel_nom,
-                prenom=sel_prenom,
-                date_saisie=sel_date,
-                age=sel_age,
-                sexe=sel_sexe,
-                palier=sel_palier,
-                niveau=lvl5,
-                interpretation=interpretation,
-                age_note=age_note,
-                travail=travail,
-                logo_path="Logo Rond.png",
-            )
+            with col_level:
+                pill_bg = LEVEL5_COLORS.get(lvl5, "#e5e7eb")
+                st.markdown(
+                    f"""
+<div style="display:flex; justify-content:flex-end;">
+  <span class="pill" style="background:{pill_bg};">Niveau: {lvl5}</span>
+</div>
+""",
+                    unsafe_allow_html=True,
+                )
 
             tab1, tab2, tab3 = st.tabs(["Interprétation assaut", "Spécificité âge", "Travail spécifique"])
 
@@ -617,45 +612,41 @@ with right:
                 st.write(f"**{age_note['Titre']}**")
                 st.write(age_note["Note"])
 
+            # Tab 3: tableau + bouton PDF aligne a droite sous le tableau
             with tab3:
                 if not travail:
-        st.info("Aucune recommandation disponible.")
+                    st.info("Aucune recommandation disponible.")
                 else:
-        col_tbl, col_pdf = st.columns([4, 1], vertical_alignment="bottom")
+                    col_tbl, col_pdf = st.columns([4, 1], vertical_alignment="bottom")
 
                     with col_tbl:
-            st.dataframe(
-                pd.DataFrame(travail)[["Application", "Detail"]],
-                use_container_width=True,
-                hide_index=True,
-            )
+                        st.dataframe(pd.DataFrame(travail)[["Application", "Detail"]], use_container_width=True, hide_index=True)
 
                     with col_pdf:
-            pdf_bytes = build_pdf_fiche(
-                nom=sel_nom,
-                prenom=sel_prenom,
-                date_saisie=sel_date,
-                age=sel_age,
-                sexe=sel_sexe,
-                palier=sel_palier,
-                niveau=lvl5,
-                interpretation=interpretation,
-                age_note=age_note,
-                travail=travail,
-                logo_path="Logo Rond.png",
-            )
+                        pdf_bytes = build_pdf_fiche(
+                            nom=sel_nom,
+                            prenom=sel_prenom,
+                            date_saisie=sel_date,
+                            age=sel_age,
+                            sexe=sel_sexe,
+                            palier=sel_palier,
+                            niveau=lvl5,
+                            interpretation=interpretation,
+                            age_note=age_note,
+                            travail=travail,
+                            logo_path="Logo Rond.png",
+                        )
 
-            b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-            filename = (
-                f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}.pdf"
-                .replace(" ", "_")
-            )
+                        b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+                        filename = (
+                            f"fiche_luc_leger_{sel_nom}_{sel_prenom}_{date.today().isoformat()}.pdf".replace(" ", "_")
+                        )
 
-            # Espace vertical pour placer le bouton bien plus bas
-            st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
+                        # Espace pour placer le bouton "plus bas"
+                        st.markdown("<div style='height: 18px'></div>", unsafe_allow_html=True)
 
-            st.markdown(
-                f"""
+                        st.markdown(
+                            f"""
 <div style="display:flex; justify-content:flex-end;">
   <a href="data:application/pdf;base64,{b64}" download="{filename}"
      style="
@@ -674,6 +665,13 @@ with right:
   </a>
 </div>
 """,
-                unsafe_allow_html=True,
-            )
+                            unsafe_allow_html=True,
+                        )
 
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
+    else:
+        st.info("Ajoute au moins un tireur pour afficher la liste et l'analyse.")
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
+st.caption("Barème club - Luc Leger (15-60 ans, paliers 7-15). Outil d'aide a la decision pour l'entrainement en Savate.")
